@@ -10,7 +10,9 @@ struct CDSVReader::SImplementation {
     std::string Buffer;
     std::queue<std::vector<std::string>> Rows;
 
-    SImplementation(std::shared_ptr<CDataSource> src) : DataSource(src), Delimiter(Delimiter) {
+    SImplementation(std::shared_ptr< CDataSource > src, char delimiter) {
+        DataSource = src;
+        Delimiter = delimiter;
     }
 
     bool End() const {
