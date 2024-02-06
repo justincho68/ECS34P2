@@ -17,42 +17,42 @@ struct CXMLReader::SImplementation {
         XML_SetUserData(DXMLParser, this);
     };
 
+    ~SImplementation()
+    {
+        XML_ParserFree(DXMLParser);
+    }
+
     bool End() const {
         return DDataSource->End() && DEntityQueue.empty();
     };
 
     bool ReadEntity(SXMLEntity &entity, bool skipcdata) {
-        //Reader fromm source if necessary
-        //Pass to XML_Parse function
-        //Return Entity
+        std::vector<char> DataBuffer(1024);
         while (DEntityQueue.empty() && !DDataSource->End()) {
-            std::vector<char> DataBuffer(256);
-            size_t numRead = DDataSource->Read(DataBuffer, 256);
-            if (numRead > 0) {
-                XML_Parse(DXMLParser, DataBuffer.data(), DataBuffer.size(), DataBuffer.size() < 256);
+            size_t numRead = DDataSource->Read(DataBuffer, DataBuffer.size());
+            if (numRead == 0 && DDataSource->End()) {
+                // Indicate end of data to parser if no more data is read and data source reports end
+                XML_Parse(DXMLParser, nullptr, 0, XML_TRUE);
+                break; // Break out of loop if no more data is available
             }
-            else {
-                XML_Parse(DXMLParser,DataBuffer.data(),0,true);
-            }
-            while(skipcdata && !DEntityQueue.empty() && DEntityQueue.front().DType == SXMLEntity::EType::CharData) {
-                DEntityQueue.pop(); // Remove the item to skip the char data
-                if (DEntityQueue.empty()) {
-                    numRead = DDataSource->Read(DataBuffer);
-                    if(numRead>0) {
+            
+            XML_Parse(DXMLParser, DataBuffer.data(), static_cast<int>(numRead), XML_FALSE);
 
-                    }
+            // Skip character data if necessary
+            while (skipcdata && !DEntityQueue.empty() && DEntityQueue.front().DType == SXMLEntity::EType::CharData) {
+                DEntityQueue.pop();
             }
         }
 
+        // After processing, check if an entity is available for return
+        if (!DEntityQueue.empty()) {
+            entity = DEntityQueue.front();
+            DEntityQueue.pop();
+            return true; // Successfully read an entity
         }
-        //Check for skipcdata
-        if(DEntityQueue.empty()) {
-            return false;
-        }
-        entity = DEntityQueue.front();
-        DEntityQueue.pop();
-        return true;
-    };
+        return false; // No entities available to read
+    }
+
 
     void StartElementHandler(const std::string &name, const std::vector<std::string> &attrs) {
         SXMLEntity TempEntity;
@@ -103,4 +103,20 @@ struct CXMLReader::SImplementation {
 
 };
 
+CXMLReader::CXMLReader(std::shared_ptr< CDataSource > src)
+{
+    DImplementation = std::make_unique<SImplementation>(src);
+}
 
+CXMLReader::~CXMLReader()
+{}
+
+bool CXMLReader::End() const 
+{
+    return DImplementation->End();
+}
+
+bool CXMLReader::ReadEntity(SXMLEntity &entity, bool skipcdata)
+{
+    return DImplementation->ReadEntity(entity, skipcdata);
+}
