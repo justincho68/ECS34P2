@@ -16,6 +16,11 @@ struct CXMLReader::SImplementation {
         XML_SetUserData(DXMLParser, this);
     };
 
+    ~SImplementation()
+    {
+        XML_ParserFree(DXMLParser);
+    }
+
     bool End() const {
         return DDataSource->End() && DEntityQueue.empty();
     };
@@ -88,3 +93,21 @@ struct CXMLReader::SImplementation {
     };
 
 };
+
+CXMLReader::CXMLReader(std::shared_ptr< CDataSource > src)
+{
+    DImplementation = std::make_unique<SImplementation>(src);
+}
+
+CXMLReader::~CXMLReader()
+{}
+
+bool CXMLReader::End() const 
+{
+    return DImplementation->End();
+}
+
+bool CXMLReader::ReadEntity(SXMLEntity &entity, bool skipcdata)
+{
+    return DImplementation->ReadEntity(entity, skipcdata);
+}
