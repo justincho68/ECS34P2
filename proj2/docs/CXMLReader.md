@@ -1,8 +1,4 @@
-#include "XMLReader.h"
-#include <expat.h>
-#include <queue>
-#include <stdio.h>
-
+CXML Reader Class
 struct CXMLReader::SImplementation {
     std::shared_ptr< CDataSource > DDataSource;
     XML_Parser DXMLParser;
@@ -17,6 +13,12 @@ struct CXMLReader::SImplementation {
         XML_SetUserData(DXMLParser, this);
     };
 
+Constructor creates an XML Reader instance and a Data source that it will read from. 
+A queue is used to process the data because the data will come in a FIFO manner and
+should be tracked as such. It then creates an instance of SImplementation and declares 
+callback functions that Expat will use when it sees tags. The Data handler method is 
+also used by Expat when it encounters CData.
+
     bool End() const {
         return DDataSource->End() && DEntityQueue.empty();
     };
@@ -25,27 +27,15 @@ struct CXMLReader::SImplementation {
         //Reader fromm source if necessary
         //Pass to XML_Parse function
         //Return Entity
-        while (DEntityQueue.empty() && !DDataSource->End()) {
-            std::vector<char> DataBuffer(256);
-            size_t numRead = DDataSource->Read(DataBuffer, 256);
-            if (numRead > 0) {
+        std::vector<char> DataBuffer;
+        while (DEntityQueue.empty()) {
+            if (DDataSource->Read(DataBuffer,256)) {
                 XML_Parse(DXMLParser, DataBuffer.data(), DataBuffer.size(), DataBuffer.size() < 256);
             }
             else {
                 XML_Parse(DXMLParser,DataBuffer.data(),0,true);
             }
-            while(skipcdata && !DEntityQueue.empty() && DEntityQueue.front().DType == SXMLEntity::EType::CharData) {
-                DEntityQueue.pop(); // Remove the item to skip the char data
-                if (DEntityQueue.empty()) {
-                    numRead = DDataSource->Read(DataBuffer);
-                    if(numRead>0) {
-
-                    }
-            }
         }
-
-        }
-        //Check for skipcdata
         if(DEntityQueue.empty()) {
             return false;
         }
@@ -53,6 +43,11 @@ struct CXMLReader::SImplementation {
         DEntityQueue.pop();
         return true;
     };
+
+Function End is used to check if the parsing of data is complete. It will return true when 
+there is no more data to read and the queue of data is empty. ReadEntity function is for
+reading the individual entities that show up in an XML file. It reads the individual start, 
+end, and possible Cdata of each element.
 
     void StartElementHandler(const std::string &name, const std::vector<std::string> &attrs) {
         SXMLEntity TempEntity;
@@ -80,7 +75,12 @@ struct CXMLReader::SImplementation {
         }
     }
 
-    static void StartElementHandlerCallback(void *context, const XML_Char *name, const XML_Char **atts) {
+    These are the callback functions. Start and End element handler are used when the 
+    reader encounters a start or end tag. These functions will create an entity and 
+    push it onto the queue. The character handler creates an entity for character data
+    and adds it to the queue.
+
+        static void StartElementHandlerCallback(void *context, const XML_Char *name, const XML_Char **atts) {
         SImplementation *ReaderObject = static_cast<SImplementation *>(context);
         std::vector<std::string> Attributes;
         auto AttrPtr = atts;
@@ -103,4 +103,6 @@ struct CXMLReader::SImplementation {
 
 };
 
-
+These static callback functions are what Expat uses. These functions cast a void pointer
+and call the corresponding function to handle the event. It is used so that the Expat 
+library can properly respond to SImplementation.

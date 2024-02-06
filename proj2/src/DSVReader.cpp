@@ -22,6 +22,7 @@ struct CDSVReader::SImplementation {
     }
     
     bool ReadRow(std::vector< std::string > &row) {
+        row.clear();
         char ch;
         std::string line;
         //Loop to read characters as long as they exist

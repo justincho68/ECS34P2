@@ -6,7 +6,7 @@
 #include "StringDataSource.h"
 #include <expat.h>
 
-TEST(XMLReader, ReadTest) {
+TEST(CXMLReader, ReadTest) {
     auto InputStream = std::make_shared<CStringDataSource>("<example attr=\"Hello World\"></example>");
     CXMLReader Reader(InputStream);
     SXMLEntity E;
@@ -19,7 +19,7 @@ TEST(XMLReader, ReadTest) {
     EXPECT_EQ(E.DType, SXMLEntity::EType::EndElement);
 }
 
-TEST(XMLWriter, WriteTest) {
+TEST(CXMLWriter, WriteTest) {
     auto OutputStream = std::make_shared<CStringDataSink>();
     CXMLWriter Writer(OutputStream);
 
