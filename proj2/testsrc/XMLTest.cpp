@@ -4,6 +4,7 @@
 #include "XMLWriter.h"
 #include "StringDataSink.h"
 #include "StringDataSource.h"
+#include <expat.h>
 
 TEST(XMLReader, ReadTest) {
     auto InputStream = std::make_shared<CStringDataSource>("<example attr=\"Hello World\"></example>");

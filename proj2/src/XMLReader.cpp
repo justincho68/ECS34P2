@@ -27,7 +27,7 @@ struct CXMLReader::SImplementation {
         std::vector<char> DataBuffer;
         while (DEntityQueue.empty()) {
             if (DDataSource->Read(DataBuffer,256)) {
-                XML_Parse(DXMLParser, DataBuffer.data(), DataBuffer.size() < 256);
+                XML_Parse(DXMLParser, DataBuffer.data(), DataBuffer.size(), DataBuffer.size() < 256);
             }
             else {
                 XML_Parse(DXMLParser,DataBuffer.data(),0,true);
@@ -61,7 +61,7 @@ struct CXMLReader::SImplementation {
     void CharacterDataHandler(const std::string &data) {
         if (!data.empty()) {
             SXMLEntity temp;
-            temp.Dtype = SXMLEntity::EType::CharData;
+            temp.DType = SXMLEntity::EType::CharData;
             temp.DNameData = data;
         }
     }
